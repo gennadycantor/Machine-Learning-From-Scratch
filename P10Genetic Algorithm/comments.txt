@@ -1,0 +1,4 @@
+To run, type: python GeneticAlg.py
+
+Caution: it is quite slow. Depending on runs to runs, it might converge a little quicker, but in general, I noticed it is slow.
+
