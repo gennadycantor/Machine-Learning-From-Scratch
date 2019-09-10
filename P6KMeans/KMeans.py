@@ -105,7 +105,7 @@ def processNormalize(imgList):
         
     return finalX, finalY
 
-""" this chunk of code was in the website linked in Week6. I couldnt unsee this once i saw it"""    
+  
 def unpack_drawing(file_handle):
     key_id, = unpack('Q', file_handle.read(8))
     countrycode, = unpack('2s', file_handle.read(2))
@@ -128,7 +128,7 @@ def unpack_drawing(file_handle):
         'image': image,
     }
 
-""" this chunk of code was in the website linked in Week6. I couldnt unsee this once i saw it"""
+
 def unpack_drawings(filename):
     counter = 0
     data = []
