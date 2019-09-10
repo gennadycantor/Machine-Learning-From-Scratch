@@ -1,0 +1,8 @@
+To run the program:
+
+python NLP.py
+
+Things to note:
+
+you need memento.txt in the same directory as NLP.py
+
