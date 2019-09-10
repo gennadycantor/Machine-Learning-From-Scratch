@@ -1,0 +1,7 @@
+to run the program type: python DecisionTree.py
+
+other things:
+
+need tmdb_5000_movies.csv 
+source code does preprocessing
+please note: running time is a little long ~3,4minutes
