@@ -1,0 +1,307 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Jul 20 16:52:25 2019
+
+@author: miru, HalfdanJ
+"""
+
+import struct
+from struct import unpack
+import numpy as np
+import math
+import random
+
+def processDict(generator):
+    counter = 0
+    imageList = []
+    for value in generator:
+        if counter < 1000:
+            # append the image pixel data or whatever for each image
+            imageList.append(value['image'])
+        counter += 1
+    return imageList
+
+def processNormalize(imgList):
+    # first fix m @ 50
+    m = 50
+    counter = 0
+    # init final x and y
+    finalX = np.zeros((1000, m))
+    finalY = np.zeros((1000, m))
+    for spoon in imgList:
+        x_cord = np.array( sum( (cord[0] for cord in spoon), () ) )
+       
+        y_cord = np.array( sum( (cord[1] for cord in spoon), () ) ) 
+     
+        #print(x_cord.shape)
+        # for each of these we have to downsample
+        # if len(x_cord) > m we down sample
+        if len(x_cord) > m:
+            #downX = np.zeros(len(x_cord)
+            xPrime = np.zeros(m)
+            #downY = np.zeros(len(y_cord))
+            yPrime = np.zeros(m)
+            for i in range(m):
+                roundTo = int(round( (i * len(x_cord)) / (m) ))
+                #print("huehue", roundTo)
+                xPrime[i] = x_cord[roundTo]
+                yPrime[i] = y_cord[roundTo]
+        # otherwise,
+        else:
+            if len(x_cord) < m:
+                # init xprime and yprime
+                #xPrime = np.zeros(m)
+                #yPrime = np.zeros(m)
+                #upsample
+                q = (m - 1) / float(len(x_cord) - 1)
+                # now check if this is of type int
+               # print("q", q)
+                if isinstance(q, int):
+                    
+                    # upsample as usual
+                    xPrime = np.zeros(m)
+                    yPrime = np.zeros(m)
+                    for j in range(m):
+                        roundTo = int(math.floor(j / float(q)))
+                        #print("qq", roundTo)
+                        #roundTo = int(np.floor(j / q))
+                        if j % q == 0:
+                            xPrime[j] = x_cord[roundTo]
+                            yPrime[j] = y_cord[roundTo]
+                        else:
+                            xPrime[j] = ( (1 - ( (j % q) / float(q) ) )*x_cord[roundTo] ) + ( ( (j % q) / float(q) )*x_cord[roundTo + 1] )
+                            yPrime[j] = ( (1 - ( (j % q) / float(q) ) )*y_cord[roundTo] ) + ( ( (j % q) / float(q) )*y_cord[roundTo + 1] )
+                else:
+                    # upsample to ceiling[(q)(len(x) - 1) + 1] and
+                    
+                    newCeil = int(math.ceil(q))*(len(x_cord) - 1) + 1
+                    xPrime = np.zeros(newCeil)
+                    yPrime = np.zeros(newCeil)
+                    #print("nC", newCeil)
+                    for k in range(newCeil):
+                        #print(newCeil)
+                        roundTo = int(np.floor(k / float(math.ceil(q)) ))
+                        #print("qqq", roundTo)
+                        if k % math.ceil(q) == 0:
+                            xPrime[k] = x_cord[roundTo]
+                            yPrime[k] = y_cord[roundTo]
+                        else:
+                            xPrime[k] = ( (1 - ( (k % np.ceil(q)) / float(np.ceil(q)) ) )*x_cord[roundTo] ) + ( ( (k % np.ceil(q)) / float(np.ceil(q)) )*x_cord[roundTo +1] )
+                            yPrime[k] = ( (1 - ( (k % np.ceil(q)) / float(np.ceil(q)) ) )*y_cord[roundTo] ) + ( ( (k % np.ceil(q)) / float(np.ceil(q)) )*y_cord[roundTo + 1] )
+                    # downsample to m
+                    xDubPrime = xPrime
+                    yDubPrime = yPrime
+                    xPrime = np.zeros(m)
+                    yPrime = np.zeros(m)
+                    for l in range(m):
+                        roundTo = int(round( (l * newCeil) / float(m) ))
+                        #print("sup ", roundTo)
+                        xPrime[l] = xDubPrime[roundTo]
+                        yPrime[l] = yDubPrime[roundTo]
+                    
+            else:
+                # just set it as how original x and y were
+                xPrime = x_cord
+                yPrime = y_cord
+        finalX[counter] = xPrime
+        finalY[counter] = yPrime
+        counter += 1
+        
+    return finalX, finalY
+    
+def unpack_drawing(file_handle):
+    key_id, = unpack('Q', file_handle.read(8))
+    countrycode, = unpack('2s', file_handle.read(2))
+    recognized, = unpack('b', file_handle.read(1))
+    timestamp, = unpack('I', file_handle.read(4))
+    n_strokes, = unpack('H', file_handle.read(2))
+    image = []
+    for i in range(n_strokes):
+        n_points, = unpack('H', file_handle.read(2))
+        fmt = str(n_points) + 'B'
+        x = unpack(fmt, file_handle.read(n_points))
+        y = unpack(fmt, file_handle.read(n_points))
+        image.append((x, y))
+
+    return {
+        'key_id': key_id,
+        'countrycode': countrycode,
+        'recognized': recognized,
+        'timestamp': timestamp,
+        'image': image,
+    }
+
+
+def unpack_drawings(filename):
+    counter = 0
+    data = []
+    with open(filename, 'rb') as f:
+        while counter < 1000:
+            try:
+                data.append(unpack_drawing(f))
+                counter += 1
+            except struct.error:
+                break
+    return data
+
+def MergeXandY(finalX, finalY):
+    return np.concatenate((finalX, finalY), axis = 1)
+    #return np.stack((finalX, finalY), 2).reshape(finalX.shape[0],-1)
+    
+
+def rangenKvec(k):
+    # we will randomly generate K vectors of length m = 50 with numbers 0 and 255
+    kmeansList = []
+    for i in range(k):
+        # times 2 since we concated x and y
+        vec = np.zeros(50*2)
+        for j in range(len(vec)):
+            vec[j] = random.uniform(0, 255)
+        kmeansList.append(vec)
+    return kmeansList
+
+def getClusterCenter(data, k, kvecList):
+    # initially start with no clusters
+    minCluster = 0
+    # one thousand of them since we have one thousand images
+    clusterList = np.zeros(1000)
+    # initialize minimum distance to a unrealistically large number so we can compare iteratively
+    mindist = 100000000
+    # for each image i = 1,...,1000
+    for i in range(1000):
+        perImage = data[i,:]
+        # get the centroids
+        for j in range(k):
+            mean = kvecList[j]
+            # init distance
+            distance = 0
+            distance += np.square(np.linalg.norm((perImage - mean[j])))
+            #for l in range(len(perImage)):
+            #    distance += np.square(perImage[l] - mean[j])
+            if distance < mindist:
+                minCluster = j + 1
+                mindist = distance
+        # undate clusterList
+        clusterList[i] = minCluster
+    return clusterList
+                
+""" recompute centers by averaging all images with respective labels  """
+def updateMeans(clusterCenterList, data, k):
+    newMeans = []
+    for i in range(k):
+        # initialise size 
+        curr_size = 0
+        # we have 100 total from 50x 50y
+        meanVec = np.zeros(100)
+        # we have to do this for each image
+        # reacll clusterCenterlist has cluster for each 1000 image
+        for j in range(len(clusterCenterList)):
+            if clusterCenterList[j] == i + 1:
+                curr_size += 1
+                # and get image
+                newIm = data[j,:]
+                # now sum up onlu the ones with the right label
+                for l in range(len(newIm)):
+                    meanVec[l] += newIm[l]
+        # now we avergage out
+        for p in range(100):
+            meanVec[p] = meanVec[p] / float(curr_size)
+        # update meanslist
+        newMeans.append(meanVec)
+    
+    return newMeans
+            
+    
+
+
+""" home stretch.... please free me..."""
+def getFinalMeans(clusterCenterList, data, kvecList, k):
+    # initizlie flags to check for convergence
+    converged = 0
+    # initialize number of iterations
+    counter = 0
+    # initialize means to "random" k vectors from earlier
+    curr_meanList = kvecList
+    
+    while converged == 0:
+        # inc counter
+        counter += 1
+        # now update means
+        updated_meanList = updateMeans(clusterCenterList, data, k)
+        # we need this to check equivalence in samples_cluster_k
+        equalKs = 0
+        # now we have updated k means clusters
+        # we now want to do this until the centroids are no longer changin
+        # in other words all samples do not change labels any longer
+        for ck in range(k):
+            # we have access two updated and curr means list so
+            dummy1 = np.array(updated_meanList[ck])
+            print(dummy1)
+            dummy2 = np.array(curr_meanList[ck])
+            print(dummy2)
+            #if updated_meanList[ck] == curr_meanList[ck]:
+            if np.array_equal(dummy1, dummy2) == True:
+                equalKs += 1
+        # so now, if equalKs is the same as k than we are done
+        if (equalKs == k):
+            converged = 1
+            break
+        # now get new cluster centers
+        clusterCenterList = getClusterCenter(data, k, updated_meanList)
+        curr_meanList = updated_meanList
+        
+    
+        
+def initCentroid(k, finalX, finalY):
+    # from 0 -1000, randomly sample k of those and set it to initial centroid indices
+    centroidInd = random.sample(range(1000), k)
+    centroidX = np.take(finalX, centroidInd, axis = 0)
+    centroidY = np.take(finalY, centroidInd, axis = 0)
+    return centroidInd, centroidX, centroidY
+    
+""" wow... finally..."""
+def Kmeans(finalX, finalY):
+    data = MergeXandY(finalX, finalY)
+    print(data.shape)
+    # now generate random K integers
+    k = random.randint(5,10)
+    # get initial random k vecotrs 
+    #kvecList = rangenKvec(k)
+    #print(kvecList)
+    #for image = 1,....,1000 we now find cluster centers
+    #clusterCenterList = getClusterCenter(data, k, kvecList)
+    # now for each image we have center 
+    #print(clusterCenterList)
+    # we are going to store 1000 means... per image in the data array
+    #finalMeans = getFinalMeans(clusterCenterList, data, kvecList, k)
+    init_centroid, centroidX, centroidY = initCentroid(k, finalX, finalY)
+    Centroid = np.concatenate((centroidX,centroidY), axis = 1)
+    counter = 1
+    distance = np.linalg.norm(data - Centroid[:, None], axis = 2)
+    ypredict = np.argmin(distance, axis = 0)
+    new_centroid = np.array([np.mean(np.take(data, np.where(ypredict == val)[0], axis = 0), axis = 0) for val in range(k)])
+    
+    while np.array_equal(Centroid, new_centroid) == False:
+        counter += 1
+        Centroid = np.copy(new_centroid)
+        ypredict = np.argmin(np.linalg.norm(data - Centroid[:, None], axis=2), axis=0)
+        new_centroid = np.array([np.mean(np.take(data, np.where(ypredict == val)[0], axis = 0), axis = 0) for val in range(k)])
+        print('counter @: ' + str(counter), np.sum((new_centroid - Centroid) ** 2))
+    
+    
+    return 0
+    
+
+    
+def main():
+    processed = unpack_drawings('full_binary_spoon.bin')
+    midData = processDict(processed)
+    #print(type(midData))
+    #print(len(midData))
+    #print(midData[0])
+    finalX,finalY = processNormalize(midData)
+    Kmeans(finalX, finalY)
+    
+    
+            
+main()
