@@ -1,0 +1,16 @@
+To run this program either:
+
+StudentID: 9071897186
+Digits: 4 and 6
+
+open LogisticP1.py on Spyder or anyother IDE for python. Then just run.
+Please make sure LogisticP1.py is in some directory along with mnist_test.csv (I understand this is not required, 
+but I did perform an evaluation on this),mnist_train.csv, and test_6.csv & test_4.csv
+
+OR
+
+if you are on the linux terminal just type:
+python LogisticP1.py.
+
+* I have plotted the cost but for some reason when I compile this on the terminal, plots are not displayed
+	in order to see the plotcost, please run on Spyder or anyother IDE for python *
