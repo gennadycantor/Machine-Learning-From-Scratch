@@ -1,0 +1,11 @@
+To run the program, type: python KMeans.py
+
+
+Files needed: full_binary_spoon.bin, KMeans.py
+
+My image was: spoon.
+
+I also attached 4 pictures in total. I originally intended to only attach the means pictures, but they literally look so weird,
+I thought maybe you meant post X1,Y1,...,XM,YM for original images that were preprocessed successfully.
+Original images are named: orignial_1.png and original_2.png
+
