@@ -1,4 +1,4 @@
-Student ID: 9071897186
+
 Faculty Members:  NIGEL BOSTON, MICHAEL FERRIS, LAWRENCE LANDWEBER, BARTON MILLER, SUSHMITA ROY, GRACE WAHBA.
 
 Please Note1: I have had to download individial image into the directory which my source code lives. I tried downloading the whole
